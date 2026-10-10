@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "title": "School Subdomain Portal",
+    "description": "Designed and deployed an online institutional subdomain platform providing resources, schedules, and information access for high school students.",
+    "icon": "fa-globe",
+    "banner": "",
+    "tech": ["HTML/CSS", "JavaScript", "PHP", "Vercel"]
+  },
+  {
+    "id": 2,
+    "title": "CanSat Prototype & Telemetry System",
+    "description": "Collaborated on constructing an atmospheric sensor micro-satellite model transmitting real-time environmental data back to a ground control terminal.",
+    "icon": "fa-satellite",
+    "banner": "alt-banner-1",
+    "tech": ["Sensors", "C/C++", "Telemetry", "Hardware"]
+  },
+  {
+    "id": 3,
+    "title": "Digital Trophy Display System",
+    "description": "Created an interactive digital gallery showcase system for organizing, archiving, and displaying institutional awards and student recognitions.",
+    "icon": "fa-trophy",
+    "banner": "alt-banner-2",
+    "tech": ["JavaScript", "MongoDB", "CSS Grid"]
+  },
+  {
+    "id": 4,
+    "title": "Interact Club IT & Brand Management",
+    "description": "Led digital initiatives, website maintenance, and digital branding as an IT Board Member for the Interact Club of Pokhara Lakeside.",
+    "icon": "fa-users",
+    "banner": "alt-banner-3",
+    "tech": ["IT Leadership", "Graphic Design", "Web Management"]
+  }
+]

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in | Sishir's Portfolio</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body class="login-body">
+    <div class="login-glow glow-a"></div>
+    <div class="login-glow glow-b"></div>
+
+    <main class="login-shell">
+      <section class="login-intro">
+        <a href="login.html" class="brand">SISHIR<span>.</span></a>
+        <div class="login-photo"><img src="merophoto.jpg" alt="Sishir" /></div>
+        <h1>Welcome to my <span class="highlight">portfolio</span></h1>
+        <p>
+          Tell me a little about yourself to come in and look around. If you'd
+          like to see my projects, I'll give you access after you sign in.
+        </p>
+        <ul class="login-points">
+          <li><i class="fa-solid fa-circle-check"></i> No password needed for visitors</li>
+          <li><i class="fa-solid fa-circle-check"></i> Your details are only used for access</li>
+          <li><i class="fa-solid fa-circle-check"></i> Projects are shared by invitation</li>
+        </ul>
+      </section>
+
+      <section class="login-card shadow-card">
+        <div class="tabs" role="tablist">
+          <button class="tab active" id="tabVisitor" role="tab" aria-selected="true" aria-controls="visitorForm">
+            <i class="fa-solid fa-user"></i> Visitor
+          </button>
+          <button class="tab" id="tabAdmin" role="tab" aria-selected="false" aria-controls="adminForm">
+            <i class="fa-solid fa-user-shield"></i> Admin
+          </button>
+        </div>
+
+        <!-- Visitor -->
+        <form id="visitorForm" class="login-form" role="tabpanel" novalidate>
+          <h2>Sign in as a visitor</h2>
+          <p class="login-sub">Fill in your details to enter the site.</p>
+
+          <div class="field">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" id="vName" placeholder=" " autocomplete="name" maxlength="60" required />
+            <label for="vName">Full name</label>
+          </div>
+          <div class="field">
+            <i class="fa-solid fa-school"></i>
+            <input type="text" id="vSchool" placeholder=" " autocomplete="organization" maxlength="80" required />
+            <label for="vSchool">School</label>
+          </div>
+          <div class="field">
+            <i class="fa-solid fa-cake-candles"></i>
+            <input type="number" id="vAge" placeholder=" " min="5" max="100" inputmode="numeric" required />
+            <label for="vAge">Age</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <span class="btn-label">Enter Portfolio</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <p class="form-error" id="visitorError" role="alert"></p>
+        </form>
+
+        <!-- Admin -->
+        <form id="adminForm" class="login-form hidden" role="tabpanel" novalidate>
+          <h2>Admin sign in</h2>
+          <p class="login-sub">For Sishir only. Manage who can view the projects.</p>
+
+          <div class="field">
+            <i class="fa-solid fa-id-badge"></i>
+            <input type="text" id="aUser" placeholder=" " autocomplete="username" required />
+            <label for="aUser">Username</label>
+          </div>
+          <div class="field">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="aPass" placeholder=" " autocomplete="current-password" required />
+            <label for="aPass">Password</label>
+            <button type="button" class="reveal" id="revealPass" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <span class="btn-label">Sign in as Admin</span>
+            <i class="fa-solid fa-shield-halved"></i>
+          </button>
+          <p class="form-error" id="adminError" role="alert"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/login.js"></script>
+  </body>
+</html>

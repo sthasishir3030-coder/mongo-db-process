@@ -1,0 +1,14 @@
+{
+  "name": "sishir-portfolio",
+  "version": "3.0.0",
+  "description": "Sishir's portfolio with visitor login and admin-controlled project access (MongoDB on Vercel)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --env-file=.env.local server.js",
+    "migrate": "node --env-file=.env.local scripts/migrate-json-to-mongo.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": { "mongodb": "^6.10.0" },
+  "license": "MIT"
+}
