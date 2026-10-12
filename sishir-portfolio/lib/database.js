@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 /**
  * lib/database.js - the data layer (MongoDB).
  * Every read/write of stored data happens here.
@@ -10,29 +10,33 @@
  *   projects  -> project content (only served to approved people)
  *   limits    -> admin login attempt counters (TTL, works across serverless instances)
  */
-const crypto = require('crypto');
-const { MongoClient } = require('mongodb');
-const SEED_PROJECTS = require('../data/projects.json'); // used only to fill an empty projects collection
+const crypto = require("crypto");
+const { MongoClient } = require("mongodb");
+const SEED_PROJECTS = require("../data/projects.json"); // used only to fill an empty projects collection
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const MAX_LOGIN_FAILURES = 8;
 
 /* ---------- helpers ---------- */
-function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
-  const hash = crypto.scryptSync(String(password), salt, 64).toString('hex');
+function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
+  const hash = crypto.scryptSync(String(password), salt, 64).toString("hex");
   return { salt, hash };
 }
 
 function checkPassword(password, record) {
   const test = crypto.scryptSync(String(password), record.salt, 64);
-  const real = Buffer.from(record.hash, 'hex');
+  const real = Buffer.from(record.hash, "hex");
   return test.length === real.length && crypto.timingSafeEqual(test, real);
 }
 
-const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
-const clean = (s) => String(s ?? '').trim().replace(/\s+/g, ' ');
-const keyOf = (name, school) => `${clean(name).toLowerCase()}|${clean(school).toLowerCase()}`;
+const sha256 = (s) => crypto.createHash("sha256").update(s).digest("hex");
+const clean = (s) =>
+  String(s ?? "")
+    .trim()
+    .replace(/\s+/g, " ");
+const keyOf = (name, school) =>
+  `${clean(name).toLowerCase()}|${clean(school).toLowerCase()}`;
 
 /* ---------- connection (cached, so warm serverless calls reuse it) ---------- */
 const cache = (globalThis.__portfolioMongo ??= { promise: null });
@@ -40,12 +44,21 @@ const cache = (globalThis.__portfolioMongo ??= { promise: null });
 function getDb() {
   if (!cache.promise) {
     const uri = process.env.MONGODB_URI;
-    if (!uri) throw new Error('MONGODB_URI is not set. Connect MongoDB in Vercel (Storage tab) or add it to .env.local.');
-    const client = new MongoClient(uri, { maxPoolSize: 5, serverSelectionTimeoutMS: 8000 });
+    if (!uri)
+      throw new Error(
+        "MONGODB_URI is not set. Connect MongoDB in Vercel (Storage tab) or add it to .env.local.",
+      );
+    const client = new MongoClient(uri, {
+      maxPoolSize: 5,
+      serverSelectionTimeoutMS: 8000,
+    });
     cache.promise = client
       .connect()
-      .then((c) => setup(c.db(process.env.MONGODB_DB || 'portfolio')))
-      .catch((err) => { cache.promise = null; throw err; }); // retry on next request
+      .then((c) => setup(c.db(process.env.MONGODB_DB || "portfolio")))
+      .catch((err) => {
+        cache.promise = null;
+        throw err;
+      }); // retry on next request
   }
   return cache.promise;
 }
@@ -53,11 +66,11 @@ function getDb() {
 /** Runs once per cold start: indexes + first-time seeding. Safe to run repeatedly. */
 async function setup(db) {
   const c = {
-    admin: db.collection('admin'),
-    visitors: db.collection('visitors'),
-    sessions: db.collection('sessions'),
-    projects: db.collection('projects'),
-    limits: db.collection('limits'),
+    admin: db.collection("admin"),
+    visitors: db.collection("visitors"),
+    sessions: db.collection("sessions"),
+    projects: db.collection("projects"),
+    limits: db.collection("limits"),
   };
 
   await Promise.all([
@@ -68,26 +81,30 @@ async function setup(db) {
     c.limits.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }),
   ]);
 
-  if (!(await c.admin.findOne({ _id: 'admin' }))) {
+  if (!(await c.admin.findOne({ _id: "admin" }))) {
     const usingEnvPassword = Boolean(process.env.ADMIN_PASSWORD);
     await c.admin.updateOne(
-      { _id: 'admin' },
+      { _id: "admin" },
       {
         $setOnInsert: {
-          username: process.env.ADMIN_USERNAME || 'sishir',
-          ...hashPassword(process.env.ADMIN_PASSWORD || 'admin123'),
+          username: process.env.ADMIN_USERNAME || "sishir",
+          ...hashPassword(process.env.ADMIN_PASSWORD || "admin123"),
           isDefaultPassword: !usingEnvPassword,
         },
       },
-      { upsert: true }
+      { upsert: true },
     );
   }
 
   if ((await c.projects.estimatedDocumentCount()) === 0) {
     await c.projects.bulkWrite(
       SEED_PROJECTS.map((p) => ({
-        updateOne: { filter: { _id: p.id }, update: { $setOnInsert: p }, upsert: true },
-      }))
+        updateOne: {
+          filter: { _id: p.id },
+          update: { $setOnInsert: p },
+          upsert: true,
+        },
+      })),
     );
   }
   return c;
@@ -99,16 +116,24 @@ function validateVisitor(input) {
   const school = clean(input?.school);
   const age = Number(input?.age);
 
-  if (name.length < 2 || name.length > 60) return { error: 'Please enter your full name (2-60 characters).' };
-  if (school.length < 2 || school.length > 80) return { error: 'Please enter your school name (2-80 characters).' };
-  if (!Number.isInteger(age) || age < 5 || age > 100) return { error: 'Please enter a valid age (5-100).' };
+  if (name.length < 2 || name.length > 60)
+    return { error: "Please enter your full name (2-60 characters)." };
+  if (school.length < 2 || school.length > 80)
+    return { error: "Please enter your school name (2-80 characters)." };
+  if (!Number.isInteger(age) || age < 5 || age > 100)
+    return { error: "Please enter a valid age (5-100)." };
   return { value: { name, school, age } };
 }
 
 /* ---------- visitors ---------- */
 const publicVisitor = (v) => ({
-  id: v._id, name: v.name, school: v.school, age: v.age,
-  hasAccess: v.hasAccess, createdAt: v.createdAt, lastLoginAt: v.lastLoginAt,
+  id: v._id,
+  name: v.name,
+  school: v.school,
+  age: v.age,
+  hasAccess: v.hasAccess,
+  createdAt: v.createdAt,
+  lastLoginAt: v.lastLoginAt,
 });
 
 /** Visitor signs in. Same name + school = same person, so approval is remembered. */
@@ -123,11 +148,15 @@ async function loginVisitor(input) {
     {
       $set: { age: value.age, lastLoginAt: now },
       $setOnInsert: {
-        _id: crypto.randomUUID(), name: value.name, school: value.school,
-        hasAccess: false, addedByAdmin: false, createdAt: now,
+        _id: crypto.randomUUID(),
+        name: value.name,
+        school: value.school,
+        hasAccess: false,
+        addedByAdmin: false,
+        createdAt: now,
       },
     },
-    { upsert: true, returnDocument: 'after' }
+    { upsert: true, returnDocument: "after" },
   );
   return { visitor: publicVisitor(visitor) };
 }
@@ -149,11 +178,15 @@ async function addVisitor(input) {
     {
       $set: { age: value.age, hasAccess: true },
       $setOnInsert: {
-        _id: crypto.randomUUID(), name: value.name, school: value.school,
-        addedByAdmin: true, createdAt: now, lastLoginAt: null,
+        _id: crypto.randomUUID(),
+        name: value.name,
+        school: value.school,
+        addedByAdmin: true,
+        createdAt: now,
+        lastLoginAt: null,
       },
     },
-    { upsert: true, returnDocument: 'after' }
+    { upsert: true, returnDocument: "after" },
   );
   return { visitor: publicVisitor(visitor) };
 }
@@ -161,7 +194,9 @@ async function addVisitor(input) {
 async function setAccess(id, hasAccess) {
   const { visitors } = await getDb();
   const v = await visitors.findOneAndUpdate(
-    { _id: String(id) }, { $set: { hasAccess: Boolean(hasAccess) } }, { returnDocument: 'after' }
+    { _id: String(id) },
+    { $set: { hasAccess: Boolean(hasAccess) } },
+    { returnDocument: "after" },
   );
   return v ? publicVisitor(v) : null;
 }
@@ -176,7 +211,7 @@ async function removeVisitor(id) {
 /* ---------- admin ---------- */
 async function verifyAdmin(username, password) {
   const { admin } = await getDb();
-  const a = await admin.findOne({ _id: 'admin' });
+  const a = await admin.findOne({ _id: "admin" });
   const userOk = clean(username).toLowerCase() === a.username.toLowerCase();
   const passOk = checkPassword(password, a); // always run, so timing doesn't leak the username
   return userOk && passOk;
@@ -184,28 +219,41 @@ async function verifyAdmin(username, password) {
 
 async function changeAdminPassword(current, next) {
   const { admin, sessions } = await getDb();
-  const a = await admin.findOne({ _id: 'admin' });
-  if (!checkPassword(current, a)) return { error: 'Current password is incorrect.' };
-  if (String(next).length < 8) return { error: 'New password must be at least 8 characters.' };
-  await admin.updateOne({ _id: 'admin' }, { $set: { ...hashPassword(next), isDefaultPassword: false } });
-  await sessions.deleteMany({ role: 'admin' }); // sign out other admin sessions
+  const a = await admin.findOne({ _id: "admin" });
+  if (!checkPassword(current, a))
+    return { error: "Current password is incorrect." };
+  if (String(next).length < 8)
+    return { error: "New password must be at least 8 characters." };
+  await admin.updateOne(
+    { _id: "admin" },
+    { $set: { ...hashPassword(next), isDefaultPassword: false } },
+  );
+  await sessions.deleteMany({ role: "admin" }); // sign out other admin sessions
   return { ok: true };
 }
 
 /* ---------- admin login rate limit (stored in MongoDB so it works on serverless) ---------- */
 async function tooManyAttempts(ip) {
   const { limits } = await getDb();
-  const rec = await limits.findOne({ _id: String(ip), expireAt: { $gt: new Date() } });
+  const rec = await limits.findOne({
+    _id: String(ip),
+    expireAt: { $gt: new Date() },
+  });
   return Boolean(rec) && rec.count >= MAX_LOGIN_FAILURES;
 }
 
 async function noteFailure(ip) {
   const { limits } = await getDb();
   const id = String(ip);
-  const res = await limits.updateOne({ _id: id, expireAt: { $gt: new Date() } }, { $inc: { count: 1 } });
+  const res = await limits.updateOne(
+    { _id: id, expireAt: { $gt: new Date() } },
+    { $inc: { count: 1 } },
+  );
   if (res.matchedCount === 0) {
     await limits.replaceOne(
-      { _id: id }, { _id: id, count: 1, expireAt: new Date(Date.now() + LOGIN_WINDOW_MS) }, { upsert: true }
+      { _id: id },
+      { _id: id, count: 1, expireAt: new Date(Date.now() + LOGIN_WINDOW_MS) },
+      { upsert: true },
     );
   }
 }
@@ -213,9 +261,12 @@ async function noteFailure(ip) {
 /* ---------- sessions ---------- */
 async function createSession(role, visitorId = null) {
   const { sessions } = await getDb();
-  const token = crypto.randomBytes(32).toString('hex');
+  const token = crypto.randomBytes(32).toString("hex");
   await sessions.insertOne({
-    tokenHash: sha256(token), role, visitorId, expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+    tokenHash: sha256(token),
+    role,
+    visitorId,
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS),
   });
   return token;
 }
@@ -224,14 +275,22 @@ async function createSession(role, visitorId = null) {
 async function getUserByToken(token) {
   if (!token) return null;
   const { sessions, admin, visitors } = await getDb();
-  const s = await sessions.findOne({ tokenHash: sha256(token), expiresAt: { $gt: new Date() } });
+  const s = await sessions.findOne({
+    tokenHash: sha256(token),
+    expiresAt: { $gt: new Date() },
+  });
   if (!s) return null;
-  if (s.role === 'admin') {
-    const a = await admin.findOne({ _id: 'admin' });
-    return { role: 'admin', name: a.username, hasAccess: true, isDefaultPassword: Boolean(a.isDefaultPassword) };
+  if (s.role === "admin") {
+    const a = await admin.findOne({ _id: "admin" });
+    return {
+      role: "admin",
+      name: a.username,
+      hasAccess: true,
+      isDefaultPassword: Boolean(a.isDefaultPassword),
+    };
   }
   const v = await visitors.findOne({ _id: s.visitorId });
-  return v ? { role: 'visitor', ...publicVisitor(v) } : null;
+  return v ? { role: "visitor", ...publicVisitor(v) } : null;
 }
 
 async function destroySession(token) {
@@ -243,12 +302,24 @@ async function destroySession(token) {
 /* ---------- projects ---------- */
 async function getProjects() {
   const { projects } = await getDb();
-  return projects.find({}, { projection: { _id: 0 } }).sort({ id: 1 }).toArray();
+  return projects
+    .find({}, { projection: { _id: 0 } })
+    .sort({ id: 1 })
+    .toArray();
 }
 
 module.exports = {
-  loginVisitor, listVisitors, addVisitor, setAccess, removeVisitor,
-  verifyAdmin, changeAdminPassword,
-  tooManyAttempts, noteFailure,
-  createSession, getUserByToken, destroySession, getProjects,
+  loginVisitor,
+  listVisitors,
+  addVisitor,
+  setAccess,
+  removeVisitor,
+  verifyAdmin,
+  changeAdminPassword,
+  tooManyAttempts,
+  noteFailure,
+  createSession,
+  getUserByToken,
+  destroySession,
+  getProjects,
 };
